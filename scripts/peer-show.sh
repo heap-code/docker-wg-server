@@ -11,4 +11,5 @@ if [ -z "$PEER_NAME" ]; then
 	exit 1
 fi
 
-cat $(peer_client_path "$PEER_NAME")
+peer_dir_require "$PEER_NAME" > /dev/null || exit 1
+cat "$(peer_client_path "$PEER_NAME")"

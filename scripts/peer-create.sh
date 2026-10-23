@@ -19,6 +19,8 @@ case "$PEER_NAME" in
 		;;
 esac
 
+peer_dns_require || exit 1
+
 PEER_DIR=$(peer_dir "$PEER_NAME")
 if [ -e "$PEER_DIR" ]; then
 	echo "Error: peer \"$PEER_NAME\" already exists" >&2
@@ -99,24 +101,28 @@ if [ "$PEER_DNS_SELF" = "true" ]; then
 fi
 
 # if any, add specified DNS
-DNS=${PEER_DNS:+"$DNS, $PEER_DNS"}
+if [ -n "$PEER_DNS" ]; then
+	DNS="${DNS:+"$DNS, "}$PEER_DNS"
+fi
 
+WG_SERVER_PUBLIC_KEY=$(cat "$WG_SERVER_KEY_PUB_PATH")
 export \
 	PEER_ALLOWED_IPS \
-	PEER_DNS=${DNS:+"DNS = $DNS"} \
+	PEER_DNS="${DNS:+"DNS = $DNS"}" \
 	PEER_ENDPOINT \
 	PEER_ENDPOINT_PORT \
 	PEER_KEEP_ALIVE \
 	PEER_IP \
 	PEER_PRIVATE_KEY \
 	PEER_PRESHARED_KEY \
-	WG_SERVER_PUBLIC_KEY=$(cat "$WG_SERVER_KEY_PUB_PATH")
+	WG_SERVER_PUBLIC_KEY
 envsubst < "$SCRIPT_DIR/templates/client.conf.tpl" > "$PEER_CLIENT_CONF"
 
+PEER_PUBLIC_KEY=$(cat "$PEER_DIR_KEY_PUB_PATH")
 export \
 	PEER_IP \
 	PEER_PRESHARED_KEY \
-	PEER_PUBLIC_KEY=$(cat "$PEER_DIR_KEY_PUB_PATH")
+	PEER_PUBLIC_KEY
 envsubst < "$SCRIPT_DIR/templates/peer.conf.tpl" > "$PEER_PEER_CONF"
 
 echo "Peer created"

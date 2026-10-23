@@ -30,6 +30,7 @@ docker run -d --name wg-server \
   --device /dev/net/tun \
   -p 51820:51820/udp \
   -e PEER_ENDPOINT=vpn.example.com \
+  -e PEER_DNS=1.1.1.1 \
   -v wg-data:/etc/wireguard \
   ghcr.io/heap-code/wg-server:latest
 ```
@@ -50,6 +51,7 @@ services:
       - "51820:51820/udp"
     environment:
       PEER_ENDPOINT: vpn.example.com
+      PEER_DNS: 1.1.1.1
     volumes:
       - wg-data:/etc/wireguard
 
@@ -113,8 +115,8 @@ After `peer-create`, `peer-delete`, `peer-enable` or `peer-disable`, run `sync` 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `PEER_ALLOWED_IPS` | `0.0.0.0/0` | `AllowedIPs` written into the generated client config. |
-| `PEER_DNS` | `1.1.1.1` | DNS server(s) written into the generated client config. |
-| `PEER_DNS_SELF` | `false` | If `true`, prepends the VPN server's own address as a DNS entry. |
+| `PEER_DNS` | *(required unless `PEER_DNS_SELF=true`)* | DNS server(s) written into the generated client config. The server refuses to start when neither `PEER_DNS` nor `PEER_DNS_SELF` is set. |
+| `PEER_DNS_SELF` | `false` | If `true`, prepends the VPN server's own address as a DNS entry. Can be used alone, without `PEER_DNS`. |
 | `PEER_ENDPOINT` | *(required)* | Public hostname/IP clients use to reach this server; written into each generated client config. |
 | `PEER_ENDPOINT_PORT` | `$WG_SERVER_PORT` | Port clients connect to (written into each generated client config). |
 | `PEER_KEEP_ALIVE` | `25` | `PersistentKeepalive` value written into the generated client config. |
