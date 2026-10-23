@@ -20,6 +20,7 @@ case "$PEER_NAME" in
 esac
 
 peer_dns_require || exit 1
+peer_endpoint_require || exit 1
 
 PEER_DIR=$(peer_dir "$PEER_NAME")
 if [ -e "$PEER_DIR" ]; then

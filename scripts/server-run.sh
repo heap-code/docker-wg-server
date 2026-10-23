@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Fail at startup rather than when creating the first peer
 peer_dns_require || exit 1
+peer_endpoint_require || exit 1
 
 case "$WG_INIT_MODE" in
 	recreate)

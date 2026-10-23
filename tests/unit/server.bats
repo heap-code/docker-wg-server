@@ -62,9 +62,17 @@ setup() {
 
 @test "server-run fails without PEER_DNS and PEER_DNS_SELF" {
 	unset PEER_DNS PEER_DNS_SELF
-	run /scripts/server-run.sh
+	run env PEER_ENDPOINT=vpn.example.com /scripts/server-run.sh
 	[ "$status" -eq 1 ]
 	[[ "$output" == *"no DNS for the peers"* ]]
+	[ ! -e "$WG_CONFIG_DIR/server" ]
+}
+
+@test "server-run fails without PEER_ENDPOINT" {
+	unset PEER_ENDPOINT
+	run env PEER_DNS=1.1.1.1 /scripts/server-run.sh
+	[ "$status" -eq 1 ]
+	[[ "$output" == *"no endpoint for the peers"* ]]
 	[ ! -e "$WG_CONFIG_DIR/server" ]
 }
 

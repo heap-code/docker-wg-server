@@ -94,6 +94,14 @@ peer_ip() {
 	[ "$(cat "$WG_CONFIG_DIR/peers/alice/keys/private")" = "$key" ]
 }
 
+@test "peer-create fails without PEER_ENDPOINT" {
+	unset PEER_ENDPOINT
+	run /scripts/peer-create.sh alice
+	[ "$status" -eq 1 ]
+	[[ "$output" == *"no endpoint for the peers"* ]]
+	[ ! -e "$WG_CONFIG_DIR/peers/alice" ]
+}
+
 @test "peer-create honors PEER_* overrides" {
 	PEER_ALLOWED_IPS=10.20.30.0/24 PEER_ENDPOINT_PORT=443 PEER_KEEP_ALIVE=0 \
 		/scripts/peer-create.sh alice

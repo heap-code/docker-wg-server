@@ -51,3 +51,11 @@ peer_dns_require() {
 		return 1
 	fi
 }
+
+# Without it, the client configs would get `Endpoint = :<port>`
+peer_endpoint_require() {
+	if [ -z "$PEER_ENDPOINT" ]; then
+		echo "Error: no endpoint for the peers: set PEER_ENDPOINT (public hostname/IP of this server)" >&2
+		return 1
+	fi
+}
