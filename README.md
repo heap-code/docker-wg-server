@@ -30,6 +30,7 @@ docker run -d --name wg-server \
   --device /dev/net/tun \
   -p 51820:51820/udp \
   -e PEER_ENDPOINT=vpn.example.com \
+  -e PEER_DNS=1.1.1.1 \
   -v wg-data:/etc/wireguard \
   ghcr.io/heap-code/wg-server:latest
 ```
@@ -50,6 +51,7 @@ services:
       - "51820:51820/udp"
     environment:
       PEER_ENDPOINT: vpn.example.com
+      PEER_DNS: 1.1.1.1
     volumes:
       - wg-data:/etc/wireguard
 
@@ -71,7 +73,10 @@ docker exec wg-server /wg-server.sh peer-delete alice
 
 ```sh
 # equivalent, without a running server, sharing the same volume
-docker run --rm -v wg-data:/etc/wireguard ghcr.io/heap-code/wg-server:latest peer-create alice
+docker run --rm -v wg-data:/etc/wireguard \
+  -e PEER_ENDPOINT=vpn.example.com \
+  -e PEER_DNS=1.1.1.1 \
+  ghcr.io/heap-code/wg-server:latest peer-create alice
 ```
 
 `sync` does need the interface to exist/come up (it calls `wg syncconf`, falling back to `wg-quick` down/up), so it should be run against the running server container:
@@ -92,9 +97,7 @@ docker exec wg-server /wg-server.sh sync
 
 Peer names may only contain letters, numbers, `-` and `_`.
 
-Since the `peer-*` commands don't touch the live interface, any change made through them (create/delete/enable/disable) is only picked up by the running server after a `sync` (or a restart of `run`).
-
-After `peer-create`, `peer-delete`, `peer-enable` or `peer-disable`, run `sync` (or restart the container) to apply the change to the running interface.
+Since the `peer-*` commands don't touch the live interface, after `peer-create`, `peer-delete`, `peer-enable` or `peer-disable`, run `sync` (or restart the container) to apply the change to the running interface.
 
 ## Environment variables
 
@@ -113,13 +116,31 @@ After `peer-create`, `peer-delete`, `peer-enable` or `peer-disable`, run `sync` 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `PEER_ALLOWED_IPS` | `0.0.0.0/0` | `AllowedIPs` written into the generated client config. |
-| `PEER_DNS` | `1.1.1.1` | DNS server(s) written into the generated client config. |
-| `PEER_DNS_SELF` | `false` | If `true`, prepends the VPN server's own address as a DNS entry. |
-| `PEER_ENDPOINT` | *(required)* | Public hostname/IP clients use to reach this server; written into each generated client config. |
+| `PEER_DNS` | *(required unless `PEER_DNS_SELF=true`)* | DNS server(s) written into the generated client config. See [Peer DNS](#peer-dns). |
+| `PEER_DNS_SELF` | `false` | If `true`, prepends the VPN server's own address as a DNS entry. See [Peer DNS](#peer-dns). |
+| `PEER_ENDPOINT` | *(required)* | Public hostname/IP clients use to reach this server; written into each generated client config. The server refuses to start, and `peer-create` fails, without it. |
 | `PEER_ENDPOINT_PORT` | `$WG_SERVER_PORT` | Port clients connect to (written into each generated client config). |
 | `PEER_KEEP_ALIVE` | `25` | `PersistentKeepalive` value written into the generated client config. |
 
 Note: peer defaults are only read at `peer-create` time and baked into that peer's `client.conf`; changing them afterwards does not affect already-created peers.
+
+### Peer DNS
+
+At least one of `PEER_DNS` and `PEER_DNS_SELF` must be set: otherwise the server refuses to start and `peer-create` fails.
+They combine into the `DNS` line of each generated client config:
+
+| `PEER_DNS` | `PEER_DNS_SELF` | Client config |
+| --- | --- | --- |
+| *(unset or empty)* | `false` | error |
+| *(unset or empty)* | `true` | `DNS = <server-ip>` |
+| `1.1.1.1` | `false` | `DNS = 1.1.1.1` |
+| `1.1.1.1` | `true` | `DNS = <server-ip>, 1.1.1.1` |
+
+`PEER_DNS` accepts several servers, separated by commas (e.g. `9.9.9.9, 149.112.112.112`).
+
+> [!WARNING]
+> This image does not run a DNS server. `PEER_DNS_SELF=true` only works if something answers DNS queries on the server's VPN address (e.g. a resolver running alongside it).
+> Used alone, without such a resolver, name resolution fails on the clients.
 
 ## Data layout
 
@@ -147,3 +168,7 @@ Everything lives under `WG_CONFIG_DIR` (default `/etc/wireguard`), which should 
             ├── version
             └── disabled       # present/"1" when the peer is disabled
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) to build the image, run the linters and the tests.

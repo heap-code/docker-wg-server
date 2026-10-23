@@ -1,0 +1,45 @@
+{
+  "name": "wg-server",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode",
+  "features": {
+    // Isolated Docker daemon to build the image and run the WireGuard containers
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    // Same version as the CI
+    "ghcr.io/devcontainers-extra/features/shfmt:1": {
+      "version": "3.10.0"
+    }
+  },
+  "mounts": [
+    // Claude Code config, credentials and history survive container rebuilds
+    "source=wg-server-claude-${devcontainerId},target=/home/vscode/.claude,type=volume",
+    // Image cache of the inner Docker daemon survives container rebuilds
+    "source=wg-server-dind-${devcontainerId},target=/var/lib/docker,type=volume"
+  ],
+  "containerEnv": {
+    // Keep .claude.json inside the persisted volume as well
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "timonwong.shellcheck",
+        "mkhl.shfmt",
+        "jetmartin.bats",
+        "editorconfig.editorconfig",
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions"
+      ],
+      "settings": {
+        "[shellscript]": {
+          "editor.defaultFormatter": "mkhl.shfmt",
+          "editor.formatOnSave": true
+        }
+      }
+    }
+  }
+}
